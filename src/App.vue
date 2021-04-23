@@ -65,12 +65,9 @@ export default {
         `
       })
       .then(res => {
-        console.log(res);
         res.data.TodoList_TodoList.map(item => {
           this.List.push(item);
         });
-        console.log(this.List);
-        console.log(this.List.length);
       });
   },
   methods: {
@@ -96,18 +93,52 @@ export default {
         }
         if (item.status == "new") {
           item.status = "done";
+          apolloProvider.clients.defaultClient.mutate({
+            mutation: gql`
+              mutation MyMutation($id: uuid = "", $status: String = "") {
+                update_TodoList_TodoList_by_pk(
+                  pk_columns: { id: $id }
+                  _set: { status: $status }
+                ) {
+                  id
+                }
+              }
+            `,
+            variables: {
+              id: val.id,
+              status: "done"
+            }
+          });
           return;
         }
         if (item.status == "done") {
           item.status = "new";
+          apolloProvider.clients.defaultClient.mutate({
+            mutation: gql`
+              mutation MyMutation($id: uuid = "", $status: String = "") {
+                update_TodoList_TodoList_by_pk(
+                  pk_columns: { id: $id }
+                  _set: { status: $status }
+                ) {
+                  id
+                }
+              }
+            `,
+            variables: {
+              id: val.id,
+              status: "new"
+            }
+          });
           return;
         }
       });
+      // this.tickData(val);
     },
     onDelete(val) {
       this.List = this.List.filter(function(item) {
         return item !== val;
       });
+      this.deleteData(val);
     },
     updateData(val) {
       apolloProvider.clients.defaultClient.mutate({
@@ -137,17 +168,58 @@ export default {
       });
     },
     editData(val) {
-      console.log("val", val);
       apolloProvider.clients.defaultClient.mutate({
-        mutation: gql``,
-        variables: {
-          objects: [
-            {
-              title: val.title,
-              description: "desc",
-              status: "new"
+        mutation: gql`
+          mutation MyMutation($id: uuid = "", $title: String = "") {
+            update_TodoList_TodoList_by_pk(
+              pk_columns: { id: $id }
+              _set: { title: $title }
+            ) {
+              id
             }
-          ]
+          }
+        `,
+        variables: {
+          id: val.id,
+          title: val.title
+        }
+      });
+    },
+    // tickData(val) {
+    // console.log("tick", val);
+    // if (val.status === "new") {
+    //   val.status = "done";
+    // } else {
+    //   val.status = "new";
+    // }
+    // apolloProvider.clients.defaultClient.mutate({
+    //   mutation: gql`
+    //     mutation MyMutation($id: uuid = "", $status: String = "") {
+    //       update_TodoList_TodoList_by_pk(
+    //         pk_columns: { id: $id }
+    //         _set: { status: $status }
+    //       ) {
+    //         id
+    //       }
+    //     }
+    //   `,
+    //   variables: {
+    //     id: val.id,
+    //     status: val.status
+    //   }
+    // });
+    // },
+    deleteData(val) {
+      apolloProvider.clients.defaultClient.mutate({
+        mutation: gql`
+          mutation MyMutation($id: uuid = "") {
+            delete_TodoList_TodoList_by_pk(id: $id) {
+              id
+            }
+          }
+        `,
+        variables: {
+          id: val.id
         }
       });
     }

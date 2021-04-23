@@ -39,7 +39,6 @@ export default {
   methods: {
     edit() {
       this.isEdit = true;
-      console.log(this.isEdit);
     },
     editInput(e) {
       this.editTodo = e.target.value;
