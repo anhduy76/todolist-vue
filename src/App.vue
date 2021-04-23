@@ -20,17 +20,58 @@
 </template>
   
 <script>
-import { ref } from "vue";
+// import { ref } from "vue";
+import gql from "graphql-tag";
+
+import ApolloClient from "apollo-boost";
+import VueApollo from "vue-apollo";
 
 import TodoList from "./components/TodoList.vue";
 import Input from "./components/Input.vue";
+const apolloProvider = new VueApollo({
+  defaultClient: new ApolloClient({
+    uri: "https://smiling-ant-46.hasura.app/v1/graphql",
+    headers: {
+      "x-hasura-admin-secret":
+        "20kN0tz0BRZqI8aVWt9woePUdqLhoxRB0shmAVpc7XJ26CH41jbB64o6cM9zFmaV"
+    }
+  })
+});
 
 export default {
   name: "App",
   components: { TodoList, Input },
-  setup() {
-    const List = ref([]);
+  // setup() {
+  //   const List = ref([]);
+  //   return { List };
+  // },
+  data: () => {
+    var List = [];
     return { List };
+  },
+  beforeMount() {
+    apolloProvider.clients.defaultClient
+      .query({
+        query: gql`
+          query MyQuery {
+            TodoList_TodoList {
+              createdAt
+              id
+              title
+              description
+              status
+            }
+          }
+        `
+      })
+      .then(res => {
+        console.log(res);
+        res.data.TodoList_TodoList.map(item => {
+          this.List.push(item);
+        });
+        console.log(this.List);
+        console.log(this.List.length);
+      });
   },
   methods: {
     addTodo(val) {
@@ -41,10 +82,12 @@ export default {
         status: "new"
       };
       this.List = [...this.List, newTodo];
+      this.updateData(val);
     },
     editTodo(val, todo) {
       let index = this.List.indexOf(todo);
       this.List[index].title = val;
+      this.editData(todo);
     },
     onTick(val) {
       this.list = this.List.map(function(item) {
@@ -64,6 +107,48 @@ export default {
     onDelete(val) {
       this.List = this.List.filter(function(item) {
         return item !== val;
+      });
+    },
+    updateData(val) {
+      apolloProvider.clients.defaultClient.mutate({
+        mutation: gql`
+          mutation insert_TodoList_TodoList(
+            $objects: [TodoList_TodoList_insert_input!]!
+          ) {
+            insert_TodoList_TodoList(objects: $objects) {
+              returning {
+                description
+                id
+                status
+                title
+              }
+            }
+          }
+        `,
+        variables: {
+          objects: [
+            {
+              title: val,
+              description: "desc",
+              status: "new"
+            }
+          ]
+        }
+      });
+    },
+    editData(val) {
+      console.log("val", val);
+      apolloProvider.clients.defaultClient.mutate({
+        mutation: gql``,
+        variables: {
+          objects: [
+            {
+              title: val.title,
+              description: "desc",
+              status: "new"
+            }
+          ]
+        }
       });
     }
   }
